@@ -11,11 +11,7 @@ import CarMini from "../images/cars-big/mini-box.png";
 
 import contractABI from '../ABI/abi.json';
 const contractAddress = "0x8d1aD974F97AE8671E8F345f254a5CFD22CE21BF";
-
-
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const signer = provider.getSigner();
-const carRentalContract = new ethers.Contract(contractAddress, contractABI, signer);
+const sepoliaChainId = 11155111;
 
 function BookCar() {
   const [modal, setModal] = useState(false);
@@ -124,10 +120,22 @@ function BookCar() {
       errorMsg.style.display = "flex";
       errorMsg.textContent = "Missing field";
     } else {
-      const pickUpDate = new Date(pickTime).getTime() / 1000;
-      const dropOffDate = new Date(dropTime).getTime() / 1000;
-  
       try {
+        if (typeof window === "undefined" || typeof window.ethereum === "undefined") {
+          throw new Error("MetaMask is not available in this browser.");
+        }
+
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        const network = await provider.getNetwork();
+
+        if (network.chainId !== sepoliaChainId) {
+          throw new Error("Please switch MetaMask to the Sepolia network.");
+        }
+
+        const signer = provider.getSigner();
+        const carRentalContract = new ethers.Contract(contractAddress, contractABI, signer);
+
         // Calculate the duration of the rental in seconds
         const pickUpDateInSeconds = new Date(pickTime).getTime() / 1000;
         const dropOffDateInSeconds = new Date(dropTime).getTime() / 1000;
@@ -172,7 +180,7 @@ function BookCar() {
         // Handle errors (e.g., user rejected the transaction)
         console.error("Payment error:", error);
         errorMsg.style.display = "flex";
-        errorMsg.textContent = "Payment failed";
+        errorMsg.textContent = error?.message || "Payment failed";
       }
     }
   };

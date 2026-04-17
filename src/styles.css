@@ -130,6 +130,13 @@ body {
 .navbar__buttons a {
   text-decoration: none;
 }
+.wallet-error {
+  color: #b42318;
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+  text-align: right;
+}
 
 .mobile-navbar {
   display: flex;

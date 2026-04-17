@@ -5,10 +5,29 @@ import React, { useState, useEffect } from 'react';
 function Navbar() {
   const [walletAddress, setWalletAddress] = useState('');
   const [isConnected, setIsConnected] = useState(false);
+  const [walletError, setWalletError] = useState('');
 
   useEffect(() => {
     checkWalletConnection();
-    addWalletListener();
+
+    if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
+      const handleAccountsChanged = (accounts) => {
+        if (accounts.length > 0) {
+          setWalletAddress(accounts[0]);
+          setIsConnected(true);
+          setWalletError('');
+        } else {
+          setWalletAddress('');
+          setIsConnected(false);
+        }
+      };
+
+      window.ethereum.on('accountsChanged', handleAccountsChanged);
+
+      return () => {
+        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+      };
+    }
   }, []);
 
   const checkWalletConnection = async () => {
@@ -20,69 +39,51 @@ function Navbar() {
         if (accounts.length > 0) {
           setWalletAddress(accounts[0]);
           setIsConnected(true);
+          setWalletError('');
         } else {
           setIsConnected(false);
         }
       } catch (err) {
+        setWalletError('Unable to check wallet connection.');
         console.error(err.message);
       }
     } else {
-      /* MetaMask is not installed */
-      console.log('Please install MetaMask');
+      setWalletError('MetaMask was not detected. Please install or enable it.');
+      setIsConnected(false);
     }
   };
 
   const connectWallet = async () => {
     if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
       try {
-        const permissions = await window.ethereum.request({
-          method: 'wallet_requestPermissions',
-          params: [
-            {
-              eth_accounts: {},
-            },
-          ],
+        const accounts = await window.ethereum.request({
+          method: 'eth_requestAccounts',
         });
 
-        if (permissions.length > 0) {
-          const accounts = await window.ethereum.request({
-            method: 'eth_requestAccounts',
-          });
+        if (accounts.length > 0) {
           setWalletAddress(accounts[0]);
           setIsConnected(true);
+          setWalletError('');
         } else {
           setIsConnected(false);
         }
       } catch (err) {
+        if (err.code === 4001) {
+          setWalletError('Connection request was rejected in MetaMask.');
+        } else {
+          setWalletError('Wallet connection failed. Please try again.');
+        }
         console.error(err.message);
       }
     } else {
-      /* MetaMask is not installed */
-      console.log('Please install MetaMask');
+      setWalletError('MetaMask was not detected. Please install or enable it.');
     }
   };
 
   const disconnectWallet = () => {
     setWalletAddress('');
     setIsConnected(false);
-  };
-
-  const addWalletListener = async () => {
-    if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
-      window.ethereum.on('accountsChanged', (accounts) => {
-        if (accounts.length > 0) {
-          setWalletAddress(accounts[0]);
-          setIsConnected(true);
-        } else {
-          setWalletAddress('');
-          setIsConnected(false);
-        }
-      });
-    } else {
-      /* MetaMask is not installed */
-      setIsConnected(false);
-      console.log('Please install MetaMask');
-    }
+    setWalletError('');
   };
 
   return (
@@ -110,6 +111,7 @@ function Navbar() {
               </button>
           </div>
         </div>
+        {walletError && <p className="wallet-error">{walletError}</p>}
       </nav>
     </>
   );
