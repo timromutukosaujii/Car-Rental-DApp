@@ -1,11 +1,17 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 
 function CarBox({ data, carID }) {
   const [carLoad, setCarLoad] = useState(true);
   return (
     <>
       {data[carID].map((car, id) => (
-        <div key={id} className="box-cars">
+        <motion.div
+          key={id}
+          className="box-cars"
+          whileHover={{ y: -6, scale: 1.01 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+        >
           {/* car */}
           <div className="pick-car">
             {carLoad && <span className="loader"></span>}
@@ -62,7 +68,7 @@ function CarBox({ data, carID }) {
               Book Now
             </a>
           </div>
-        </div>
+        </motion.div>
       ))}
     </>
   );

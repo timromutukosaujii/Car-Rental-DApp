@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import Logo from "../images/logo/logo.png";
 import React, { useState, useEffect } from 'react';
+import { AnimatePresence, motion } from "framer-motion";
 
 function Navbar() {
   const [walletAddress, setWalletAddress] = useState('');
@@ -96,19 +97,31 @@ function Navbar() {
             </Link>
           </div>
           <div className="navbar__buttons">
-          <button
-                className="navbar__buttons__connect"
-                onClick={isConnected ? disconnectWallet : connectWallet}
-              >
-                {isConnected ? (
-                  <>
-                    <span>Connected:</span>
-                    {` ${walletAddress.substring(0, 6)}...${walletAddress.substring(38)}`}
-                  </>
-                ) : (
-                  'Connect Wallet'
-                )}
-              </button>
+            <motion.button
+              className={`navbar__buttons__connect ${isConnected ? "wallet-connected" : "wallet-disconnected"}`}
+              onClick={isConnected ? disconnectWallet : connectWallet}
+              animate={
+                isConnected
+                  ? { scale: 1, boxShadow: "0 10px 15px 0 rgba(19, 150, 92, 0.35)" }
+                  : { scale: [1, 1.02, 1] }
+              }
+              transition={isConnected ? { duration: 0.25 } : { duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={isConnected ? "connected" : "disconnected"}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {isConnected
+                    ? `Connected: ${walletAddress.substring(0, 6)}...${walletAddress.substring(38)}`
+                    : "Connect Wallet"}
+                </motion.span>
+              </AnimatePresence>
+            </motion.button>
           </div>
         </div>
         {walletError && <p className="wallet-error">{walletError}</p>}

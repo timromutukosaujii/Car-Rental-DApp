@@ -35,7 +35,7 @@ function Footer() {
                   rel="noreferrer"
                   href="https://linkedin/in/hristijanmicevski/"
                 >
-                  Created by Hristijan Â©
+                  Created by Hristijan © | Edited/Modified by Sital Pakhrin Tamang
                 </a>
               </li>
             </ul>
@@ -83,3 +83,4 @@ function Footer() {
 }
 
 export default Footer;
+

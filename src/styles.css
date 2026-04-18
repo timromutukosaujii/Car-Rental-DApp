@@ -123,9 +123,18 @@ body {
   box-shadow: 0 10px 15px 0 rgba(255, 83, 48, 0.35);
   transition: all 0.3s;
 }
+.wallet-connected {
+  background-color: #13965c;
+}
+.wallet-disconnected {
+  background-color: #ff4d30;
+}
 .navbar__buttons__connect:hover {
   box-shadow: 0 10px 15px 0 rgba(255, 83, 48, 0.5);
   background-color: #fa4226;
+}
+.wallet-connected:hover {
+  background-color: #0f7f4e;
 }
 .navbar__buttons a {
   text-decoration: none;
@@ -1031,6 +1040,7 @@ body {
   width: 54rem;
   padding: 5.5rem;
   position: relative;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 @media (max-width: 1000px) {
   .all-testimonials__box {
@@ -1040,6 +1050,9 @@ body {
 .all-testimonials__box p {
   font-size: 2.2rem;
   font-weight: 500;
+}
+.all-testimonials__box:hover {
+  box-shadow: 0 24px 42px 0 rgba(0, 0, 0, 0.14);
 }
 .all-testimonials__box__name {
   display: flex;
@@ -1054,6 +1067,10 @@ body {
   width: 7rem;
   height: 7rem;
   border-radius: 50%;
+  transition: transform 0.25s ease;
+}
+.all-testimonials__box:hover .all-testimonials__box__name__profile img {
+  transform: scale(1.06);
 }
 .all-testimonials__box__name__profile h4 {
   font-size: 1.8rem;
@@ -1069,6 +1086,11 @@ body {
   position: absolute;
   bottom: 33px;
   right: 60px;
+  transition: transform 0.25s ease, color 0.25s ease;
+}
+.all-testimonials__box:hover .quotes-icon {
+  transform: rotate(-8deg);
+  color: #fa4226;
 }
 @media (max-width: 470px) {
   .quotes-icon {

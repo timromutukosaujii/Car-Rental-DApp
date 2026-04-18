@@ -1,3 +1,5 @@
+/* global ethers */
+
 async function main() {
   const CarRental = await ethers.getContractFactory("CarRental");
   const carRental = await CarRental.deploy();

@@ -1,5 +1,6 @@
 import Img2 from "../images/testimonials/pfp1.jpg";
 import Img3 from "../images/testimonials/pfp2.jpg";
+import { motion } from "framer-motion";
 
 function Testimonials() {
   return (
@@ -19,7 +20,14 @@ function Testimonials() {
             </div>
 
             <div className="all-testimonials">
-              <div className="all-testimonials__box">
+              <motion.div
+                className="all-testimonials__box"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.45, ease: "easeOut" }}
+                whileHover={{ y: -8, scale: 1.01 }}
+              >
                 <span className="quotes-icon">
                   <i className="fa-solid fa-quote-right"></i>
                 </span>
@@ -37,9 +45,16 @@ function Testimonials() {
                     </span>
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
-              <div className="all-testimonials__box box-2">
+              <motion.div
+                className="all-testimonials__box box-2"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.45, delay: 0.1, ease: "easeOut" }}
+                whileHover={{ y: -8, scale: 1.01 }}
+              >
                 <span className="quotes-icon">
                   <i className="fa-solid fa-quote-right"></i>
                 </span>
@@ -56,7 +71,7 @@ function Testimonials() {
                     </span>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
         </div>

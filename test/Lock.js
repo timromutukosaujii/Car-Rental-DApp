@@ -1,3 +1,5 @@
+/* global ethers */
+
 const {
   time,
   loadFixture,

@@ -1,24 +1,51 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import CarBox from "./CarBox";
 import { CAR_DATA } from "./CarData";
+
+const fleetSlides = [
+  { label: "VW Arteon", active: "SecondCar", btn: "btn1", carID: 1, key: "second" },
+  { label: "Audi A5 S-Line", active: "FirstCar", btn: "btn2", carID: 0, key: "first" },
+  { label: "Toyota Corolla Hybrid", active: "ThirdCar", btn: "btn3", carID: 2, key: "third" },
+  { label: "BMW 530", active: "FourthCar", btn: "btn4", carID: 3, key: "fourth" },
+  { label: "Kia Sportage", active: "FifthCar", btn: "btn5", carID: 4, key: "fifth" },
+  { label: "Mini Cooper", active: "SixthCar", btn: "btn6", carID: 5, key: "sixth" },
+  { label: "Mercedes C-Class", active: "SeventhCar", btn: "btn7", carID: 6, key: "seventh" },
+  { label: "Range Rover", active: "EighthCar", btn: "btn8", carID: 7, key: "eighth" },
+  { label: "BYD Atto 2", active: "NinthCar", btn: "btn9", carID: 8, key: "ninth" },
+];
 
 function PickCar() {
   const [active, setActive] = useState("SecondCar");
   const [colorBtn, setColorBtn] = useState("btn1");
 
-  const btnID = (id) => {
-    setColorBtn(colorBtn === id ? "" : id);
-  };
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      const currentIndex = fleetSlides.findIndex((slide) => slide.active === active);
+      const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % fleetSlides.length;
+      setActive(fleetSlides[nextIndex].active);
+      setColorBtn(fleetSlides[nextIndex].btn);
+    }, 4200);
+
+    return () => clearInterval(intervalId);
+  }, [active]);
 
   const coloringButton = (id) => {
     return colorBtn === id ? "colored-button" : "";
   };
 
+  const currentSlide = fleetSlides.find((slide) => slide.active === active) || fleetSlides[0];
+
   return (
     <>
       <section className="pick-section">
         <div className="container">
-          <div className="pick-container">
+          <motion.div
+            className="pick-container"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          >
             <div className="pick-container__title">
               <h3>Vehicle Models</h3>
               <h2>Our rental fleet</h2>
@@ -30,74 +57,33 @@ function PickCar() {
             <div className="pick-container__car-content">
               {/* pick car */}
               <div className="pick-box">
-                <button
-                  className={`${coloringButton("btn1")}`}
-                  onClick={() => {
-                    setActive("SecondCar");
-                    btnID("btn1");
-                  }}
-                >
-                  VW Arteon
-                </button>
-                <button
-                  className={`${coloringButton("btn2")}`}
-                  id="btn2"
-                  onClick={() => {
-                    setActive("FirstCar");
-                    btnID("btn2");
-                  }}
-                >
-                  Audi A5 S-Line
-                </button>
-                <button
-                  className={`${coloringButton("btn3")}`}
-                  id="btn3"
-                  onClick={() => {
-                    setActive("ThirdCar");
-                    btnID("btn3");
-                  }}
-                >
-                  Toyota Corolla Hybrid
-                </button>
-                <button
-                  className={`${coloringButton("btn4")}`}
-                  id="btn4"
-                  onClick={() => {
-                    setActive("FourthCar");
-                    btnID("btn4");
-                  }}
-                >
-                  BMW 530
-                </button>
-                <button
-                  className={`${coloringButton("btn5")}`}
-                  id="btn5"
-                  onClick={() => {
-                    setActive("FifthCar");
-                    btnID("btn5");
-                  }}
-                >
-                  Kia Sportage
-                </button>
-                <button
-                  className={`${coloringButton("btn6")}`}
-                  id="btn6"
-                  onClick={() => {
-                    setActive("SixthCar");
-                    btnID("btn6");
-                  }}
-                >
-                  Mini Cooper
-                </button>
+                {fleetSlides.map((slide) => (
+                  <button
+                    key={slide.btn}
+                    className={`${coloringButton(slide.btn)}`}
+                    id={slide.btn}
+                    onClick={() => {
+                      setActive(slide.active);
+                      setColorBtn(slide.btn);
+                    }}
+                  >
+                    {slide.label}
+                  </button>
+                ))}
               </div>
-              {active === "FirstCar" && <CarBox data={CAR_DATA} carID={0} />}
-              {active === "SecondCar" && <CarBox data={CAR_DATA} carID={1} />}
-              {active === "ThirdCar" && <CarBox data={CAR_DATA} carID={2} />}
-              {active === "FourthCar" && <CarBox data={CAR_DATA} carID={3} />}
-              {active === "FifthCar" && <CarBox data={CAR_DATA} carID={4} />}
-              {active === "SixthCar" && <CarBox data={CAR_DATA} carID={5} />}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentSlide.key}
+                  initial={{ opacity: 0, x: 30, scale: 0.98 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: -30, scale: 1.02 }}
+                  transition={{ duration: 0.35, ease: "easeOut" }}
+                >
+                  <CarBox data={CAR_DATA} carID={currentSlide.carID} />
+                </motion.div>
+              </AnimatePresence>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
     </>

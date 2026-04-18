@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
-import { CAR_DATA } from './CarData';
 import CarAudi from "../images/cars-big/audi-box.png";
 import CarVW from "../images/cars-big/arteon-box.jpg";
 import CarToyota from "../images/cars-big/corolla-box.png";
 import CarBmw from "../images/cars-big/bmw-box.png";
 import CarKia from "../images/cars-big/sportage-box.png";
 import CarMini from "../images/cars-big/mini-box.png";
+import CarMercedes from "../images/cars-big/mercedes-cclass.png";
+import CarRangeRover from "../images/cars-big/range-rover.png";
+import CarByd from "../images/cars-big/byd-atto2.png";
 
 
 import contractABI from '../ABI/abi.json';
@@ -21,6 +23,7 @@ function BookCar() {
   const [dropOff, setDropOff] = useState("");
   const [pickTime, setPickTime] = useState("");
   const [dropTime, setDropTime] = useState("");
+  const [carCount, setCarCount] = useState("1");
   const [carImg, setCarImg] = useState("");
 
   // modal infos
@@ -70,6 +73,11 @@ function BookCar() {
   const openModal = async (e) => {
     e.preventDefault();
     const errorMsg = document.querySelector(".error-message");
+    const parsedCarCount = Number(carCount);
+    const pickDate = new Date(pickTime);
+    const dropDate = new Date(dropTime);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     if (
       pickUp === "" ||
@@ -80,9 +88,10 @@ function BookCar() {
     ) {
       errorMsg.style.display = "flex";
       errorMsg.textContent = "Missing field";
-    } else if (
-      pickTime >= dropTime || pickTime < new Date()
-    ) {
+    } else if (Number.isNaN(parsedCarCount) || parsedCarCount <= 0) {
+      errorMsg.style.display = "flex";
+      errorMsg.textContent = "Car count must be at least 1";
+    } else if (pickDate >= dropDate || pickDate < today) {
       errorMsg.style.display = "flex";
       errorMsg.textContent = "Invalid date range";
     } else {
@@ -136,46 +145,31 @@ function BookCar() {
         const signer = provider.getSigner();
         const carRentalContract = new ethers.Contract(contractAddress, contractABI, signer);
 
-        // Calculate the duration of the rental in seconds
-        const pickUpDateInSeconds = new Date(pickTime).getTime() / 1000;
-        const dropOffDateInSeconds = new Date(dropTime).getTime() / 1000;
-        const durationInSeconds = dropOffDateInSeconds - pickUpDateInSeconds;
-  
-        // Find the selected car in the CAR_DATA array
-        const selectedCar = CAR_DATA.find((car) => car[0].name === carType);
-  
-        if (!selectedCar) {
-          errorMsg.style.display = "flex";
-          errorMsg.textContent = "Invalid car type";
-        } else {
-          // Extract the price of the selected car
-          const carPrice = parseFloat(selectedCar[0].price);
-  
-          // Calculate the total cost based on the car price and duration
-          const totalCost = (carPrice * durationInSeconds) / (24 * 3600); // Convert to days
-  
-          // You can display the total cost to the user or proceed with payment here
-          console.log(`Total cost: ETH ${totalCost.toFixed(2)}`);
-  
-          // Prompt the user to pay using MetaMask
-          const paymentAmount = ethers.utils.parseUnits(totalCost.toFixed(2), 'ether'); // Convert to wei
-          const gasLimit = 300000;
-  
-          // Send the payment transaction to the carRentalContract
-          const transaction = await signer.sendTransaction({
-            to: carRentalContract.address, // Replace with the address of your carRentalContract
-            value: paymentAmount,
-            gasLimit: gasLimit,
-          });
-          
-          // Check if the transaction was successful
-          await transaction.wait();
-  
-          errorMsg.style.display = "none";
-          setModal(!modal);
-          const doneMsg = document.querySelector(".booking-done");
-          doneMsg.style.display = "flex";
-        }
+        const pickUpDateInSeconds = Math.floor(new Date(pickTime).getTime() / 1000);
+        const dropOffDateInSeconds = Math.floor(new Date(dropTime).getTime() / 1000);
+        const parsedCarCount = Number(carCount);
+
+        const [, , totalWei] = await carRentalContract.getBookingCost(
+          carType,
+          pickUpDateInSeconds,
+          dropOffDateInSeconds,
+          parsedCarCount
+        );
+
+        const transaction = await carRentalContract.bookCar(
+          carType,
+          pickUpDateInSeconds,
+          dropOffDateInSeconds,
+          parsedCarCount,
+          { value: totalWei }
+        );
+
+        await transaction.wait();
+
+        errorMsg.style.display = "none";
+        setModal(!modal);
+        const doneMsg = document.querySelector(".booking-done");
+        doneMsg.style.display = "flex";
       } catch (error) {
         // Handle errors (e.g., user rejected the transaction)
         console.error("Payment error:", error);
@@ -208,6 +202,10 @@ function BookCar() {
     setDropTime(e.target.value);
   };
 
+  const handleCarCount = (e) => {
+    setCarCount(e.target.value);
+  };
+
   // based on value name show car img
   let imgUrl;
   switch (carImg) {
@@ -228,6 +226,15 @@ function BookCar() {
       break;
     case "Mini Cooper":
       imgUrl = CarMini;
+      break;
+    case "Mercedes C-Class":
+      imgUrl = CarMercedes;
+      break;
+    case "Range Rover":
+      imgUrl = CarRangeRover;
+      break;
+    case "BYD Atto 2":
+      imgUrl = CarByd;
       break;
     default:
       imgUrl = "";
@@ -278,6 +285,9 @@ function BookCar() {
                     </option>
                     <option value="Kia Sportage">Kia Sportage</option>
                     <option value="Mini Cooper">Mini Cooper</option>
+                    <option value="Mercedes C-Class">Mercedes C-Class</option>
+                    <option value="Range Rover">Range Rover</option>
+                    <option value="BYD Atto 2">BYD Atto 2</option>
                   </select>
                 </div>
 
@@ -288,11 +298,12 @@ function BookCar() {
                   </label>
                   <select value={pickUp} onChange={handlePick}>
                     <option>Select pick up location</option>
-                    <option>Los Angeles</option>
-                    <option>San Diego</option>
-                    <option>Sacramento</option>
-                    <option>San Jose</option>
-                    <option>Long Beach</option>
+                    <option>London</option>
+                    <option>Manchester</option>
+                    <option>Birmingham</option>
+                    <option>Liverpool</option>
+                    <option>Leeds</option>
+                    <option>Bristol</option>
                   </select>
                 </div>
 
@@ -303,11 +314,12 @@ function BookCar() {
                   </label>
                   <select value={dropOff} onChange={handleDrop}>
                     <option>Select drop off location</option>
-                    <option>Los Angeles</option>
-                    <option>San Diego</option>
-                    <option>Sacramento</option>
-                    <option>San Jose</option>
-                    <option>Long Beach</option>
+                    <option>London</option>
+                    <option>Manchester</option>
+                    <option>Birmingham</option>
+                    <option>Liverpool</option>
+                    <option>Leeds</option>
+                    <option>Bristol</option>
                   </select>
                 </div>
 
@@ -334,6 +346,21 @@ function BookCar() {
                     value={dropTime}
                     onChange={handleDropTime}
                     type="date"
+                  ></input>
+                </div>
+
+                <div className="box-form__car-time">
+                  <label htmlFor="carcount">
+                    <i className="fa-solid fa-hashtag"></i> &nbsp;
+                    Number of Cars <b>*</b>
+                  </label>
+                  <input
+                    id="carcount"
+                    value={carCount}
+                    onChange={handleCarCount}
+                    type="number"
+                    min="1"
+                    max="10"
                   ></input>
                 </div>
 

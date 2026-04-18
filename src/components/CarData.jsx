@@ -4,6 +4,9 @@ import ToyotaCorolla from "../images/cars-big/corolla-box.png";
 import Bmw5 from "../images/cars-big/bmw-box.png";
 import KiaSportage from "../images/cars-big/sportage-box.png";
 import Mini from "../images/cars-big/mini-box.png";
+import MercedesCClass from "../images/cars-big/mercedes-cclass.png";
+import RangeRover from "../images/cars-big/range-rover.png";
+import BydAtto2 from "../images/cars-big/byd-atto2.png";
 
 export const CAR_DATA = [
   [
@@ -88,6 +91,48 @@ export const CAR_DATA = [
       air: "Yes",
       transmission: "Manual",
       fuel: "Gasoline",
+    },
+  ],
+  [
+    {
+      name: "Mercedes C-Class",
+      price: "0.041",
+      img: MercedesCClass,
+      model: "C200",
+      mark: "Mercedes",
+      year: "2023",
+      doors: "4/5",
+      air: "Yes",
+      transmission: "Automatic",
+      fuel: "Petrol Hybrid",
+    },
+  ],
+  [
+    {
+      name: "Range Rover",
+      price: "0.052",
+      img: RangeRover,
+      model: "Autobiography",
+      mark: "Land Rover",
+      year: "2024",
+      doors: "4/5",
+      air: "Yes",
+      transmission: "Automatic",
+      fuel: "Plug-in Hybrid",
+    },
+  ],
+  [
+    {
+      name: "BYD Atto 2",
+      price: "0.029",
+      img: BydAtto2,
+      model: "Atto 2",
+      mark: "BYD",
+      year: "2025",
+      doors: "4/5",
+      air: "Yes",
+      transmission: "Automatic",
+      fuel: "Electric",
     },
   ],
 ];
