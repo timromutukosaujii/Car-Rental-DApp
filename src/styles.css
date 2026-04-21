@@ -348,7 +348,7 @@ body {
   border-radius: 0.8rem;
   font-size: 1.6rem;
   font-weight: 600;
-  display: none;
+  display: flex;
   justify-content: space-between;
   align-items: center;
 }
@@ -367,7 +367,7 @@ body {
   border-radius: 0.8rem;
   font-size: 1.6rem;
   font-weight: 500;
-  display: none;
+  display: flex;
   justify-content: space-between;
   align-items: center;
 }
@@ -527,6 +527,22 @@ body {
   text-transform: uppercase;
   color: #ff4d30;
   margin-bottom: 2rem;
+}
+.booking-modal__alert {
+  color: #721c24;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 0.8rem;
+  padding: 1rem 1.4rem;
+  margin-bottom: 1.6rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.booking-modal__alert i {
+  cursor: pointer;
 }
 
 .input-time {

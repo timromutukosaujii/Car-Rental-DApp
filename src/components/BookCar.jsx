@@ -12,7 +12,9 @@ import CarByd from "../images/cars-big/byd-atto2.png";
 
 
 import contractABI from '../ABI/abi.json';
-const contractAddress = "0x8d1aD974F97AE8671E8F345f254a5CFD22CE21BF";
+const contractAddress =
+  process.env.REACT_APP_CAR_RENTAL_CONTRACT_ADDRESS ||
+  "0x8d1aD974F97AE8671E8F345f254a5CFD22CE21BF";
 const sepoliaChainId = 11155111;
 
 function BookCar() {
@@ -25,6 +27,9 @@ function BookCar() {
   const [dropTime, setDropTime] = useState("");
   const [carCount, setCarCount] = useState("1");
   const [carImg, setCarImg] = useState("");
+  const [formErrorMessage, setFormErrorMessage] = useState("");
+  const [modalErrorMessage, setModalErrorMessage] = useState("");
+  const [bookingSuccessMessage, setBookingSuccessMessage] = useState("");
 
   // modal infos
   const [name, setName] = useState("");
@@ -39,40 +44,65 @@ function BookCar() {
   // taking value of modal inputs
   const handleName = (e) => {
     setName(e.target.value);
+    setModalErrorMessage("");
   };
 
   const handleLastName = (e) => {
     setLastName(e.target.value);
+    setModalErrorMessage("");
   };
 
   const handlePhone = (e) => {
     setPhone(e.target.value);
+    setModalErrorMessage("");
   };
 
   const handleAge = (e) => {
     setAge(e.target.value);
+    setModalErrorMessage("");
   };
 
   const handleEmail = (e) => {
     setEmail(e.target.value);
+    setModalErrorMessage("");
   };
 
   const handleAddress = (e) => {
     setAddress(e.target.value);
+    setModalErrorMessage("");
   };
 
   const handleCity = (e) => {
     setCity(e.target.value);
+    setModalErrorMessage("");
   };
 
   const handleZip = (e) => {
     setZipCode(e.target.value);
+    setModalErrorMessage("");
+  };
+
+  const getReadableErrorMessage = (error) => {
+    const rawMessage =
+      error?.reason ||
+      error?.data?.message ||
+      error?.error?.message ||
+      error?.message ||
+      "Payment failed";
+
+    return rawMessage
+      .replace(/^execution reverted:\s*/i, "")
+      .replace(/^Error:\s*/i, "");
+  };
+
+  const closeModal = () => {
+    setModal(false);
+    setModalErrorMessage("");
   };
 
   // open modal when all inputs are fulfilled
   const openModal = async (e) => {
     e.preventDefault();
-    const errorMsg = document.querySelector(".error-message");
     const parsedCarCount = Number(carCount);
     const pickDate = new Date(pickTime);
     const dropDate = new Date(dropTime);
@@ -86,19 +116,17 @@ function BookCar() {
       dropTime === "" ||
       carType === ""
     ) {
-      errorMsg.style.display = "flex";
-      errorMsg.textContent = "Missing field";
+      setFormErrorMessage("Missing field");
     } else if (Number.isNaN(parsedCarCount) || parsedCarCount <= 0) {
-      errorMsg.style.display = "flex";
-      errorMsg.textContent = "Car count must be at least 1";
+      setFormErrorMessage("Car count must be at least 1");
     } else if (pickDate >= dropDate || pickDate < today) {
-      errorMsg.style.display = "flex";
-      errorMsg.textContent = "Invalid date range";
+      setFormErrorMessage("Invalid date range");
     } else {
-      setModal(!modal);
+      setFormErrorMessage("");
+      setModalErrorMessage("");
+      setModal(true);
       const modalDiv = document.querySelector(".booking-modal");
       modalDiv.scroll(0, 0);
-      errorMsg.style.display = "none";
     }
   };
 
@@ -114,8 +142,6 @@ function BookCar() {
   // confirm modal booking
   const confirmBooking = async (e) => {
     e.preventDefault();
-    const errorMsg = document.querySelector(".error-message");
-  
     if (
       name === "" ||
       lastName === "" ||
@@ -126,56 +152,57 @@ function BookCar() {
       city === "" ||
       zipcode === ""
     ) {
-      errorMsg.style.display = "flex";
-      errorMsg.textContent = "Missing field";
-    } else {
-      try {
-        if (typeof window === "undefined" || typeof window.ethereum === "undefined") {
-          throw new Error("MetaMask is not available in this browser.");
-        }
+      setModalErrorMessage("Missing field");
+      return;
+    }
 
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        await provider.send("eth_requestAccounts", []);
-        const network = await provider.getNetwork();
-
-        if (network.chainId !== sepoliaChainId) {
-          throw new Error("Please switch MetaMask to the Sepolia network.");
-        }
-
-        const signer = provider.getSigner();
-        const carRentalContract = new ethers.Contract(contractAddress, contractABI, signer);
-
-        const pickUpDateInSeconds = Math.floor(new Date(pickTime).getTime() / 1000);
-        const dropOffDateInSeconds = Math.floor(new Date(dropTime).getTime() / 1000);
-        const parsedCarCount = Number(carCount);
-
-        const [, , totalWei] = await carRentalContract.getBookingCost(
-          carType,
-          pickUpDateInSeconds,
-          dropOffDateInSeconds,
-          parsedCarCount
-        );
-
-        const transaction = await carRentalContract.bookCar(
-          carType,
-          pickUpDateInSeconds,
-          dropOffDateInSeconds,
-          parsedCarCount,
-          { value: totalWei }
-        );
-
-        await transaction.wait();
-
-        errorMsg.style.display = "none";
-        setModal(!modal);
-        const doneMsg = document.querySelector(".booking-done");
-        doneMsg.style.display = "flex";
-      } catch (error) {
-        // Handle errors (e.g., user rejected the transaction)
-        console.error("Payment error:", error);
-        errorMsg.style.display = "flex";
-        errorMsg.textContent = error?.message || "Payment failed";
+    try {
+      if (typeof window === "undefined" || typeof window.ethereum === "undefined") {
+        throw new Error("MetaMask is not available in this browser.");
       }
+
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      const network = await provider.getNetwork();
+
+      if (network.chainId !== sepoliaChainId) {
+        throw new Error("Please switch MetaMask to the Sepolia network.");
+      }
+
+      const signer = provider.getSigner();
+      const carRentalContract = new ethers.Contract(contractAddress, contractABI, signer);
+
+      const pickUpDateInSeconds = Math.floor(new Date(pickTime).getTime() / 1000);
+      const dropOffDateInSeconds = Math.floor(new Date(dropTime).getTime() / 1000);
+      const parsedCarCount = Number(carCount);
+      if (Number.isNaN(parsedCarCount) || parsedCarCount <= 0) throw new Error("Car count must be at least 1");
+
+      const [, , totalWei] = await carRentalContract.getBookingCost(
+        carType,
+        pickUpDateInSeconds,
+        dropOffDateInSeconds,
+        parsedCarCount
+      );
+
+      const transaction = await carRentalContract.bookCar(
+        carType,
+        pickUpDateInSeconds,
+        dropOffDateInSeconds,
+        parsedCarCount,
+        { value: totalWei }
+      );
+
+      await transaction.wait();
+
+      setModal(false);
+      setModalErrorMessage("");
+      setFormErrorMessage("");
+      setBookingSuccessMessage(
+        `Booking completed for ${parsedCarCount} ${carType} car(s). Tx: ${transaction.hash.slice(0, 10)}...`
+      );
+    } catch (error) {
+      console.error("Payment error:", error);
+      setModalErrorMessage(getReadableErrorMessage(error));
     }
   };
   
@@ -184,26 +211,38 @@ function BookCar() {
   const handleCar = (e) => {
     setCarType(e.target.value);
     setCarImg(e.target.value);
+    setFormErrorMessage("");
+    setBookingSuccessMessage("");
   };
 
   const handlePick = (e) => {
     setPickUp(e.target.value);
+    setFormErrorMessage("");
+    setBookingSuccessMessage("");
   };
 
   const handleDrop = (e) => {
     setDropOff(e.target.value);
+    setFormErrorMessage("");
+    setBookingSuccessMessage("");
   };
 
   const handlePickTime = (e) => {
     setPickTime(e.target.value);
+    setFormErrorMessage("");
+    setBookingSuccessMessage("");
   };
 
   const handleDropTime = (e) => {
     setDropTime(e.target.value);
+    setFormErrorMessage("");
+    setBookingSuccessMessage("");
   };
 
   const handleCarCount = (e) => {
     setCarCount(e.target.value);
+    setFormErrorMessage("");
+    setBookingSuccessMessage("");
   };
 
   // based on value name show car img
@@ -242,8 +281,7 @@ function BookCar() {
 
   // hide message
   const hideMessage = () => {
-    const doneMsg = document.querySelector(".booking-done");
-    doneMsg.style.display = "none";
+    setBookingSuccessMessage("");
   };
 
   return (
@@ -251,7 +289,7 @@ function BookCar() {
       <section id="booking-section" className="book-section">
         {/* overlay */}
         <div
-          onClick={openModal}
+          onClick={closeModal}
           className={`modal-overlay ${modal ? "active-modal" : ""}`}
         ></div>
 
@@ -260,14 +298,19 @@ function BookCar() {
             <div className="book-content__box">
               <h2>Book a car</h2>
 
-              <p className="error-message">
-                All fields required! <i className="fa-solid fa-xmark"></i>
-              </p>
+              {formErrorMessage && (
+                <p className="error-message">
+                  {formErrorMessage}
+                  <i onClick={() => setFormErrorMessage("")} className="fa-solid fa-xmark"></i>
+                </p>
+              )}
 
-              <p className="booking-done">
-                Check your email for confirmation.{" "}
-                <i onClick={hideMessage} className="fa-solid fa-xmark"></i>
-              </p>
+              {bookingSuccessMessage && (
+                <p className="booking-done">
+                  {bookingSuccessMessage}
+                  <i onClick={hideMessage} className="fa-solid fa-xmark"></i>
+                </p>
+              )}
 
               <form className="box-form">
                 <div className="box-form__car-type">
@@ -276,7 +319,7 @@ function BookCar() {
                     Type <b>*</b>
                   </label>
                   <select value={carType} onChange={handleCar}>
-                    <option>Select your car type</option>
+                    <option value="">Select your car type</option>
                     <option value="Audi A5 S-Line">Audi A5 S-Line</option>
                     <option value="VW Arteon">VW Arteon</option>
                     <option value="Toyota Corolla">Toyota Corolla</option>
@@ -297,7 +340,7 @@ function BookCar() {
                     <b>*</b>
                   </label>
                   <select value={pickUp} onChange={handlePick}>
-                    <option>Select pick up location</option>
+                    <option value="">Select pick up location</option>
                     <option>London</option>
                     <option>Manchester</option>
                     <option>Birmingham</option>
@@ -313,7 +356,7 @@ function BookCar() {
                     <b>*</b>
                   </label>
                   <select value={dropOff} onChange={handleDrop}>
-                    <option>Select drop off location</option>
+                    <option value="">Select drop off location</option>
                     <option>London</option>
                     <option>Manchester</option>
                     <option>Birmingham</option>
@@ -360,7 +403,7 @@ function BookCar() {
                     onChange={handleCarCount}
                     type="number"
                     min="1"
-                    max="10"
+                    step="1"
                   ></input>
                 </div>
 
@@ -379,7 +422,7 @@ function BookCar() {
         {/* title */}
         <div className="booking-modal__title">
           <h2>Complete Reservation</h2>
-          <i onClick={openModal} className="fa-solid fa-xmark"></i>
+          <i onClick={closeModal} className="fa-solid fa-xmark"></i>
         </div>
   
         {/* car info */}
@@ -442,6 +485,12 @@ function BookCar() {
         {/* personal info */}
         <div className="booking-modal__person-info">
           <h4>Personal Information</h4>
+          {modalErrorMessage && (
+            <p className="booking-modal__alert">
+              {modalErrorMessage}
+              <i onClick={() => setModalErrorMessage("")} className="fa-solid fa-xmark"></i>
+            </p>
+          )}
           <form className="info-form">
             <div className="info-form__2col">
               <span>
@@ -454,7 +503,6 @@ function BookCar() {
                   type="text"
                   placeholder="Enter your first name"
                 ></input>
-                <p className="error-modal">This field is required.</p>
               </span>
 
               <span>
@@ -467,7 +515,6 @@ function BookCar() {
                   type="text"
                   placeholder="Enter your last name"
                 ></input>
-                <p className="error-modal ">This field is required.</p>
               </span>
 
               <span>
@@ -480,7 +527,6 @@ function BookCar() {
                   type="tel"
                   placeholder="Enter your phone number"
                 ></input>
-                <p className="error-modal">This field is required.</p>
               </span>
 
               <span>
@@ -493,7 +539,6 @@ function BookCar() {
                   type="number"
                   placeholder="18"
                 ></input>
-                <p className="error-modal ">This field is required.</p>
               </span>
             </div>
 
@@ -508,7 +553,6 @@ function BookCar() {
                   type="email"
                   placeholder="Enter your email address"
                 ></input>
-                <p className="error-modal">This field is required.</p>
               </span>
 
               <span>
@@ -521,7 +565,6 @@ function BookCar() {
                   type="text"
                   placeholder="Enter your street address"
                 ></input>
-                <p className="error-modal ">This field is required.</p>
               </span>
             </div>
 
@@ -536,7 +579,6 @@ function BookCar() {
                   type="text"
                   placeholder="Enter your city"
                 ></input>
-                <p className="error-modal">This field is required.</p>
               </span>
 
               <span>
@@ -549,7 +591,6 @@ function BookCar() {
                   type="text"
                   placeholder="Enter your zip code"
                 ></input>
-                <p className="error-modal ">This field is required.</p>
               </span>
             </div>
 
