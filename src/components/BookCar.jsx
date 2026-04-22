@@ -34,7 +34,7 @@ const INITIAL_PROFILE_STATE = {
   email: "",
   address: "",
   city: "",
-  zipcode: "",
+  postcode: "",
 };
 
 function BookCar() {
@@ -121,7 +121,7 @@ function BookCar() {
         email: profile.email,
         address: profile.address,
         city: profile.city,
-        zipcode: profile.zipcode,
+        postcode: profile.postcode,
       },
       booking: {
         carType: formData.carType,

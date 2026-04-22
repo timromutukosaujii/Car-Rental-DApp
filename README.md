@@ -1,71 +1,64 @@
-# Car Rental DApp (CN6035)
+# Car Rental DApp
 
-Car Rental DApp is a decentralized application for managing car reservations on Ethereum Sepolia.  
-It combines:
+Hybrid DApp for car booking with:
 
-1. A Solidity smart contract back end (`contracts/CarRental.sol`)
-2. A Node.js + MongoDB backend (`backend/server.js`)
-3. A React front end (`src/`)
-4. Hardhat deployment/testing scripts (`scripts/`, `hardhat.config.js`)
+1. Smart contract backend (`contracts/CarRental.sol`)
+2. Node + MongoDB Atlas backend API (`backend/server.js`)
+3. React frontend (`src/`)
 
-The system allows users to connect MetaMask, estimate booking costs, submit bookings as blockchain transactions, and view booking history by wallet.
+## Project Structure
 
-## Project Scope (Aligned to Coursework)
+1. `contracts/` Solidity contract
+2. `scripts/` deploy scripts
+3. `test/CarRental.test.js` contract tests
+4. `backend/` API server + Mongo model
+5. `src/` frontend app
 
-This repository is structured to satisfy the CN6035 task requirements:
+## Environment Setup
 
-1. DApp with functional front end and back end
-2. Blockchain test network interaction (Sepolia)
-3. Source code managed with version control (Git)
-4. Code quality tooling (`eslint` scripts)
-5. Technical report + installation manual included
+Create `.env` in project root:
 
-## Key Features
+```env
+API_URL="https://eth-sepolia.g.alchemy.com/v2/<your_api_key>"
+PRIVATE_KEY="<your_private_key>"
+REACT_APP_CAR_RENTAL_CONTRACT_ADDRESS="0x<deployed_contract_address>"
+REACT_APP_BACKEND_URL="http://localhost:3001"
+BACKEND_PORT=3001
+MONGODB_URI="mongodb+srv://<username>:<password>@<cluster-url>/car_rental_dapp?retryWrites=true&w=majority&appName=Cluster0"
+MONGODB_DB_NAME="car_rental_dapp"
+MONGODB_COLLECTION="bookings"
+```
 
-1. Wallet connection with MetaMask
-2. Booking flow with date and payment validation
-3. Multi-car booking flow with simple split-plan support
-4. On-chain reservation storage and lifecycle methods
-5. Booking history retrieval from smart contract
-6. Front-end feedback for success and error handling
+## Run the App
 
-## Tech Stack
-
-1. Solidity `0.8.x`
-2. Hardhat + Ethers.js
-3. React `18`
-4. MetaMask (Web3 provider)
-5. Sepolia testnet
-6. ESLint for code quality checks
-
-## Repository Structure
-
-1. `contracts/` smart contracts
-2. `scripts/` deployment scripts
-3. `src/components/` React UI components
-4. `src/ABI/abi.json` contract ABI used by front end
-5. `hardhat.config.js` network and build config
-6. `TECHNICAL_REPORT.md` advanced technical report (500–2,000 words)
-7. `INSTALLATION_MANUAL.md` install/deploy/run guide
-
-## Quick Start
-
-Follow `INSTALLATION_MANUAL.md` for full steps. Minimal flow:
+1. Install dependencies:
 
 ```bash
 npm install
+```
+
+2. Deploy contract (Sepolia):
+
+```bash
 npx hardhat run scripts/deploy.js --network sepolia
+```
+
+3. Start backend:
+
+```bash
 npm run start:backend
+```
+
+4. Start frontend:
+
+```bash
 npm start
 ```
 
-Open `http://localhost:3000`.
+Frontend: `http://localhost:3000`  
+Backend health: `http://127.0.0.1:3001/health`
 
-Backend health endpoint: `http://localhost:3001/health`.
-
-## Backend API (Node + MongoDB)
-
-The backend exposes REST endpoints for blockchain reads and persists customer booking records in MongoDB.
+## Backend API
 
 1. `GET /health`
 2. `GET /api/cars`
@@ -76,89 +69,37 @@ The backend exposes REST endpoints for blockchain reads and persists customer bo
 7. `GET /api/local-bookings?walletAddress=0x<wallet_address>`
 8. `POST /api/local-bookings`
 
-## Environment Variables
-
-Create `.env` in project root:
-
-```env
-API_URL="https://eth-sepolia.g.alchemy.com/v2/<your_key>"
-PRIVATE_KEY="<your_64_hex_chars_private_key>"
-REACT_APP_CAR_RENTAL_CONTRACT_ADDRESS="0x<deployed_contract_address>"
-REACT_APP_BACKEND_URL="http://localhost:3001"
-BACKEND_PORT="3001"
-MONGODB_URI="mongodb://127.0.0.1:27017"
-MONGODB_DB_NAME="car_rental_dapp"
-MONGODB_COLLECTION="bookings"
-```
-
-MongoDB Atlas setup:
-
-1. Create a free/shared cluster in MongoDB Atlas.
-2. Create a database user with read/write access.
-3. In Atlas Network Access, allow your IP (or `0.0.0.0/0` for testing only).
-4. Copy the Atlas connection string and set it as `MONGODB_URI` in `.env`, for example: `mongodb+srv://<username>:<password>@<cluster-url>/?retryWrites=true&w=majority&appName=car-rental-dapp`.
-5. Use database name `car_rental_dapp` and collection `bookings`.
-
-Security note:
-
-1. Never commit real private keys.
-2. Use a test-only wallet.
-3. Rotate keys immediately if exposed.
-
 ## Code Quality
 
-Run lint checks:
+ESLint covers frontend, backend, scripts, tests, and Hardhat config.
 
 ```bash
 npm run lint
-```
-
-Auto-fix where possible:
-
-```bash
 npm run lint:fix
 ```
 
-Run contract tests:
+Contract tests:
 
 ```bash
 npm run test:contracts
 ```
 
-Run full quality gate:
+Format:
+
+```bash
+npm run format
+npm run format:check
+```
+
+Full quality gate:
 
 ```bash
 npm run quality
 ```
 
-## Code Quality Evidence
+## Quick Submission Evidence
 
-1. ESLint is configured across frontend, backend, scripts, tests, and Hardhat config.
-2. Prettier is configured for consistent formatting.
-3. Hardhat contract tests cover `CarRental` lifecycle scenarios.
-4. Production build can be verified with `npm run build`.
-5. Single-command verification is available via `npm run quality`.
-
-## My Contributions
-
-This project was forked from an open-source base. My own implementation work includes:
-
-1. Sepolia deployment configuration and environment validation.
-2. Node backend API and booking persistence implementation.
-3. Wallet/network validation improvements in booking flow.
-4. Booking UI enhancements and refactor for maintainability.
-5. Installation manual and technical report updates.
-6. Code quality tooling and contract testing improvements.
-
-## Evidence for Marking Sheet
-
-1. Back-end implementation (20): `contracts/CarRental.sol`
-2. Blockchain interaction (20): `src/components/BookCar.jsx`, `src/components/BookingHistory.jsx`, `scripts/deploy.js`
-3. Front-end implementation (20): `src/components/*`, `src/styles.css`
-4. Code quality + version control (10): `package.json` lint scripts, Git commit history
-
-## Documentation for Submission
-
-1. Advanced technical report: `TECHNICAL_REPORT.md`
-2. Installation manual: `INSTALLATION_MANUAL.md`
-3. Full source code: this repository
+1. `/health` returns `database: connected`
+2. Booking transaction succeeds on Sepolia
+3. Booking document appears in Atlas `car_rental_dapp.bookings`
+4. `npm run quality` passes

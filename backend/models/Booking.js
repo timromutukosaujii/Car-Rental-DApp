@@ -19,7 +19,7 @@ const profileSchema = new mongoose.Schema(
     email: { type: String, trim: true, default: '' },
     address: { type: String, trim: true, default: '' },
     city: { type: String, trim: true, default: '' },
-    zipcode: { type: String, trim: true, default: '' },
+    postcode: { type: String, trim: true, default: '' },
   },
   { _id: false },
 );

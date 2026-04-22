@@ -248,7 +248,7 @@ async function handleCreateLocalBooking(req, res) {
       email: sanitizeText(body.profile?.email, 120),
       address: sanitizeText(body.profile?.address, 200),
       city: sanitizeText(body.profile?.city, 80),
-      zipcode: sanitizeText(body.profile?.zipcode, 20),
+      postcode: sanitizeText(body.profile?.postcode, 20),
     };
 
     const bookingPlan = Array.isArray(body.booking?.plan)

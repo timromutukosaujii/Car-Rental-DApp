@@ -12,7 +12,7 @@ const PROFILE_FIELDS_ONE_COL = [
 
 const PROFILE_FIELDS_TWO_COL_BOTTOM = [
   { key: "city", label: "City", type: "text", placeholder: "Enter your city" },
-  { key: "zipcode", label: "Zip Code", type: "text", placeholder: "Enter your zip code" },
+  { key: "postcode", label: "Post Code", type: "text", placeholder: "Enter your post code" },
 ];
 
 function BookingModal({
