@@ -15,7 +15,20 @@ import contractABI from '../ABI/abi.json';
 const contractAddress =
   process.env.REACT_APP_CAR_RENTAL_CONTRACT_ADDRESS ||
   "0x8d1aD974F97AE8671E8F345f254a5CFD22CE21BF";
+const backendBaseUrl = process.env.REACT_APP_BACKEND_URL || "http://localhost:3001";
 const sepoliaChainId = 11155111;
+const CAR_TYPES = [
+  "Audi A5 S-Line",
+  "VW Arteon",
+  "Toyota Corolla",
+  "BMW 530",
+  "Kia Sportage",
+  "Mini Cooper",
+  "Mercedes C-Class",
+  "Range Rover",
+  "BYD Atto 2",
+];
+const LOCATIONS = ["London", "Manchester", "Birmingham", "Liverpool", "Leeds", "Bristol"];
 
 function BookCar() {
   const [modal, setModal] = useState(false);
@@ -28,8 +41,10 @@ function BookCar() {
   const [carCount, setCarCount] = useState("1");
   const [carImg, setCarImg] = useState("");
   const [formErrorMessage, setFormErrorMessage] = useState("");
+  const [formInfoMessage, setFormInfoMessage] = useState("");
   const [modalErrorMessage, setModalErrorMessage] = useState("");
   const [bookingSuccessMessage, setBookingSuccessMessage] = useState("");
+  const [bookingPlan, setBookingPlan] = useState([]);
 
   // modal infos
   const [name, setName] = useState("");
@@ -95,8 +110,136 @@ function BookCar() {
       .replace(/^Error:\s*/i, "");
   };
 
+  const persistBookingToBackend = async ({
+    walletAddress,
+    chainId,
+    plan,
+    txHashes,
+  }) => {
+    const payload = {
+      walletAddress,
+      profile: {
+        firstName: name,
+        lastName,
+        phone,
+        age,
+        email,
+        address,
+        city,
+        zipcode,
+      },
+      booking: {
+        carType,
+        pickUp,
+        dropOff,
+        pickUpDate: pickTime,
+        dropOffDate: dropTime,
+        carCount,
+        plan,
+      },
+      blockchain: {
+        chainId,
+        contractAddress,
+        txHashes,
+      },
+    };
+
+    const response = await fetch(`${backendBaseUrl}/api/local-bookings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const responseBody = await response.json().catch(() => ({}));
+      throw new Error(responseBody.error || "Backend storage failed.");
+    }
+  };
+
   const closeModal = () => {
     setModal(false);
+    setModalErrorMessage("");
+  };
+
+  const getReadContract = async () => {
+    if (typeof window === "undefined" || typeof window.ethereum === "undefined") return null;
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const network = await provider.getNetwork();
+    if (network.chainId !== sepoliaChainId) return null;
+    return new ethers.Contract(contractAddress, contractABI, provider);
+  };
+
+  const buildInitialPlan = (selectedType, totalCount, selectedPick, selectedDrop) => [
+    {
+      carType: selectedType,
+      carCount: String(totalCount),
+      pickUp: selectedPick,
+      dropOff: selectedDrop,
+    },
+  ];
+
+  const getAvailabilityMap = async () => {
+    const contract = await getReadContract();
+    if (!contract) return null;
+
+    const entries = await Promise.all(
+      CAR_TYPES.map(async (type) => {
+        const [totalUnitsBn, rentedUnitsBn] = await contract.getCarAvailability(type);
+        const available = Math.max(totalUnitsBn.toNumber() - rentedUnitsBn.toNumber(), 0);
+        return [type, available];
+      })
+    );
+
+    return Object.fromEntries(entries);
+  };
+
+  const estimateTotalEth = async (type, pickupSeconds, dropoffSeconds, count) => {
+    const contract = await getReadContract();
+    if (!contract) return null;
+    const [, , totalWei] = await contract.getBookingCost(type, pickupSeconds, dropoffSeconds, count);
+    return Number(ethers.utils.formatEther(totalWei)).toFixed(4);
+  };
+
+  const buildSuggestedSplitPlan = (selectedType, totalCount, selectedPick, selectedDrop, availabilityMap) => {
+    const remainingPlan = [];
+    let remaining = totalCount;
+
+    const selectedAvailable = availabilityMap[selectedType] || 0;
+    if (selectedAvailable > 0) {
+      const take = Math.min(selectedAvailable, remaining);
+      remainingPlan.push({
+        carType: selectedType,
+        carCount: String(take),
+        pickUp: selectedPick,
+        dropOff: selectedDrop,
+      });
+      remaining -= take;
+    }
+
+    const fallbackTypes = CAR_TYPES.filter((type) => type !== selectedType)
+      .map((type) => ({ type, available: availabilityMap[type] || 0 }))
+      .filter((item) => item.available > 0)
+      .sort((a, b) => b.available - a.available);
+
+    for (const item of fallbackTypes) {
+      if (remaining <= 0) break;
+      const take = Math.min(item.available, remaining);
+      remainingPlan.push({
+        carType: item.type,
+        carCount: String(take),
+        pickUp: selectedPick,
+        dropOff: selectedDrop,
+      });
+      remaining -= take;
+    }
+
+    return { plan: remainingPlan, remaining };
+  };
+
+  const handlePlanItemChange = (index, field, value) => {
+    setBookingPlan((prev) =>
+      prev.map((item, idx) => (idx === index ? { ...item, [field]: value } : item))
+    );
     setModalErrorMessage("");
   };
 
@@ -122,6 +265,64 @@ function BookCar() {
     } else if (pickDate >= dropDate || pickDate < today) {
       setFormErrorMessage("Invalid date range");
     } else {
+      if (parsedCarCount > 1) {
+        const defaultPlan = buildInitialPlan(carType, parsedCarCount, pickUp, dropOff);
+        setBookingPlan(defaultPlan);
+      } else {
+        setBookingPlan([]);
+      }
+      setFormInfoMessage("");
+
+      if (parsedCarCount > 1) {
+        try {
+          const availabilityMap = await getAvailabilityMap();
+          const pickUpDateInSeconds = Math.floor(pickDate.getTime() / 1000);
+          const dropOffDateInSeconds = Math.floor(dropDate.getTime() / 1000);
+
+          if (availabilityMap) {
+            const selectedAvailable = availabilityMap[carType] || 0;
+            const totalAvailable = Object.values(availabilityMap).reduce((sum, val) => sum + val, 0);
+
+            if (selectedAvailable >= parsedCarCount) {
+              const sameTypeCost = await estimateTotalEth(
+                carType,
+                pickUpDateInSeconds,
+                dropOffDateInSeconds,
+                parsedCarCount
+              );
+              if (sameTypeCost) {
+                setFormInfoMessage(
+                  `Same-type booking available: ${parsedCarCount} x ${carType} (est. ${sameTypeCost} ETH total).`
+                );
+              }
+            } else if (totalAvailable >= parsedCarCount) {
+              const { plan } = buildSuggestedSplitPlan(
+                carType,
+                parsedCarCount,
+                pickUp,
+                dropOff,
+                availabilityMap
+              );
+              if (plan.length > 0) {
+                setBookingPlan(plan);
+                setFormInfoMessage(
+                  `Suggested split based on availability: ${plan
+                    .map((item) => `${item.carCount} x ${item.carType}`)
+                    .join(" + ")}`
+                );
+              }
+            } else {
+              setFormErrorMessage(
+                `Only ${totalAvailable} car(s) currently available across all types.`
+              );
+              return;
+            }
+          }
+        } catch (error) {
+          console.error("Suggestion lookup failed:", error);
+        }
+      }
+
       setFormErrorMessage("");
       setModalErrorMessage("");
       setModal(true);
@@ -171,34 +372,71 @@ function BookCar() {
 
       const signer = provider.getSigner();
       const carRentalContract = new ethers.Contract(contractAddress, contractABI, signer);
+      const walletAddress = await signer.getAddress();
 
       const pickUpDateInSeconds = Math.floor(new Date(pickTime).getTime() / 1000);
       const dropOffDateInSeconds = Math.floor(new Date(dropTime).getTime() / 1000);
       const parsedCarCount = Number(carCount);
       if (Number.isNaN(parsedCarCount) || parsedCarCount <= 0) throw new Error("Car count must be at least 1");
 
-      const [, , totalWei] = await carRentalContract.getBookingCost(
-        carType,
-        pickUpDateInSeconds,
-        dropOffDateInSeconds,
-        parsedCarCount
-      );
+      const finalPlan = bookingPlan.length
+        ? bookingPlan
+        : buildInitialPlan(carType, parsedCarCount, pickUp, dropOff);
 
-      const transaction = await carRentalContract.bookCar(
-        carType,
-        pickUpDateInSeconds,
-        dropOffDateInSeconds,
-        parsedCarCount,
-        { value: totalWei }
-      );
+      const plannedTotal = finalPlan.reduce((sum, item) => sum + Number(item.carCount || 0), 0);
+      if (plannedTotal !== parsedCarCount) {
+        throw new Error("Plan car counts must match Number of Cars.");
+      }
 
-      await transaction.wait();
+      const txHashes = [];
+      const shortHashes = [];
+      for (const item of finalPlan) {
+        const itemCount = Number(item.carCount);
+        if (!item.carType || Number.isNaN(itemCount) || itemCount <= 0) {
+          throw new Error("Each booking plan row needs a valid car type and count.");
+        }
+        if (!item.pickUp || !item.dropOff) {
+          throw new Error("Each booking plan row needs pick-up and drop-off location.");
+        }
+
+        const [, , totalWei] = await carRentalContract.getBookingCost(
+          item.carType,
+          pickUpDateInSeconds,
+          dropOffDateInSeconds,
+          itemCount
+        );
+
+        const transaction = await carRentalContract.bookCar(
+          item.carType,
+          pickUpDateInSeconds,
+          dropOffDateInSeconds,
+          itemCount,
+          { value: totalWei }
+        );
+
+        await transaction.wait();
+        txHashes.push(transaction.hash);
+        shortHashes.push(`${transaction.hash.slice(0, 10)}...`);
+      }
+
+      try {
+        await persistBookingToBackend({
+          walletAddress,
+          chainId: network.chainId,
+          plan: finalPlan,
+          txHashes,
+        });
+      } catch (storageError) {
+        console.error("Backend storage error:", storageError);
+        setFormInfoMessage("Booking succeeded on blockchain, but backend storage was unavailable.");
+      }
 
       setModal(false);
       setModalErrorMessage("");
       setFormErrorMessage("");
+      setFormInfoMessage("");
       setBookingSuccessMessage(
-        `Booking completed for ${parsedCarCount} ${carType} car(s). Tx: ${transaction.hash.slice(0, 10)}...`
+        `Booked ${parsedCarCount} car(s) in ${finalPlan.length} booking(s). Tx: ${shortHashes.join(", ")}`
       );
     } catch (error) {
       console.error("Payment error:", error);
@@ -212,36 +450,46 @@ function BookCar() {
     setCarType(e.target.value);
     setCarImg(e.target.value);
     setFormErrorMessage("");
+    setFormInfoMessage("");
     setBookingSuccessMessage("");
   };
 
   const handlePick = (e) => {
     setPickUp(e.target.value);
     setFormErrorMessage("");
+    setFormInfoMessage("");
     setBookingSuccessMessage("");
   };
 
   const handleDrop = (e) => {
     setDropOff(e.target.value);
     setFormErrorMessage("");
+    setFormInfoMessage("");
     setBookingSuccessMessage("");
   };
 
   const handlePickTime = (e) => {
     setPickTime(e.target.value);
     setFormErrorMessage("");
+    setFormInfoMessage("");
     setBookingSuccessMessage("");
   };
 
   const handleDropTime = (e) => {
     setDropTime(e.target.value);
     setFormErrorMessage("");
+    setFormInfoMessage("");
     setBookingSuccessMessage("");
   };
 
   const handleCarCount = (e) => {
-    setCarCount(e.target.value);
+    const nextValue = e.target.value;
+    setCarCount(nextValue);
+    if (Number(nextValue) <= 1) {
+      setBookingPlan([]);
+    }
     setFormErrorMessage("");
+    setFormInfoMessage("");
     setBookingSuccessMessage("");
   };
 
@@ -309,6 +557,12 @@ function BookCar() {
                 <p className="booking-done">
                   {bookingSuccessMessage}
                   <i onClick={hideMessage} className="fa-solid fa-xmark"></i>
+                </p>
+              )}
+              {formInfoMessage && (
+                <p className="booking-info">
+                  {formInfoMessage}
+                  <i onClick={() => setFormInfoMessage("")} className="fa-solid fa-xmark"></i>
                 </p>
               )}
 
@@ -484,6 +738,54 @@ function BookCar() {
         </div>
         {/* personal info */}
         <div className="booking-modal__person-info">
+          {Number(carCount) > 1 && bookingPlan.length > 0 && (
+            <div className="booking-plan">
+              <h4>Multi-Car Plan</h4>
+              {bookingPlan.map((item, index) => (
+                <div key={`${item.carType}-${index}`} className="booking-plan__row">
+                  <select
+                    value={item.carType}
+                    onChange={(e) => handlePlanItemChange(index, "carType", e.target.value)}
+                  >
+                    {CAR_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={item.carCount}
+                    onChange={(e) => handlePlanItemChange(index, "carCount", e.target.value)}
+                  />
+                  <select
+                    value={item.pickUp}
+                    onChange={(e) => handlePlanItemChange(index, "pickUp", e.target.value)}
+                  >
+                    <option value="">Pick-up</option>
+                    {LOCATIONS.map((location) => (
+                      <option key={location} value={location}>
+                        {location}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={item.dropOff}
+                    onChange={(e) => handlePlanItemChange(index, "dropOff", e.target.value)}
+                  >
+                    <option value="">Drop-off</option>
+                    {LOCATIONS.map((location) => (
+                      <option key={location} value={location}>
+                        {location}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+          )}
           <h4>Personal Information</h4>
           {modalErrorMessage && (
             <p className="booking-modal__alert">

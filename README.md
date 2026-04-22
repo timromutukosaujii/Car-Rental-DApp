@@ -1,62 +1,125 @@
-# Car Rental Dapp
+# Car Rental DApp (CN6035)
 
-Car Rental Dapp is a decentralized application (Dapp) built on Ethereum using Solidity and React. It allows users to book cars and make payments using cryptocurrency.
+Car Rental DApp is a decentralized application for managing car reservations on Ethereum Sepolia.  
+It combines:
 
-<div style="text-align:center;">
-  <img src="/src/images/Car-Rental-Dapp.png" alt="site">
-</div>
+1. A Solidity smart contract back end (`contracts/CarRental.sol`)
+2. A Node.js read API backend (`backend/server.js`)
+3. A React front end (`src/`)
+4. Hardhat deployment/testing scripts (`scripts/`, `hardhat.config.js`)
 
-Car Rental Dapp provides an easy and decentralized way for users to book cars for rental. Users can select a car type, pick-up and drop-off locations, and choose the rental duration. Payments are made using cryptocurrency via the Ethereum blockchain.
+The system allows users to connect MetaMask, estimate booking costs, submit bookings as blockchain transactions, and view booking history by wallet.
 
+## Project Scope (Aligned to Coursework)
 
-- User-friendly interface for booking cars.
-- Integration with the Ethereum blockchain for secure and transparent payments.
-- Selection of car type, pick-up, and drop-off locations.
-- Validation and error handling for booking and payment processes.
-- Smart contract to manage car rentals, payments, and user balances.
+This repository is structured to satisfy the CN6035 task requirements:
 
+1. DApp with functional front end and back end
+2. Blockchain test network interaction (Sepolia)
+3. Source code managed with version control (Git)
+4. Code quality tooling (`eslint` scripts)
+5. Technical report + installation manual included
 
-Before you begin, ensure you have met the following requirements:
+## Key Features
 
-- [Node.js](https://nodejs.org/) and [npm](https://www.npmjs.com/) installed.
-- [MetaMask](https://metamask.io/) extension installed in your browser.
-- Ethereum wallet with testnet Ether for testing (e.g., Ropsten or Rinkeby).
+1. Wallet connection with MetaMask
+2. Booking flow with date and payment validation
+3. Multi-car booking flow with simple split-plan support
+4. On-chain reservation storage and lifecycle methods
+5. Booking history retrieval from smart contract
+6. Front-end feedback for success and error handling
 
-To set up the development environment and run the Minted AI DApp locally, follow these steps:
+## Tech Stack
 
-1. Clone the GitHub repository:
+1. Solidity `0.8.x`
+2. Hardhat + Ethers.js
+3. React `18`
+4. MetaMask (Web3 provider)
+5. Sepolia testnet
+6. ESLint for code quality checks
 
-   ```shell
-   git clone https://github.com/timromutukosaujii/Car-Rental-DApp
+## Repository Structure
 
-2. Install the dependencies: 
+1. `contracts/` smart contracts
+2. `scripts/` deployment scripts
+3. `src/components/` React UI components
+4. `src/ABI/abi.json` contract ABI used by front end
+5. `hardhat.config.js` network and build config
+6. `TECHNICAL_REPORT.md` advanced technical report (500–2,000 words)
+7. `INSTALLATION_MANUAL.md` install/deploy/run guide
 
-    ```shell
-    npm install
+## Quick Start
 
-3. Set up environment variables:
+Follow `INSTALLATION_MANUAL.md` for full steps. Minimal flow:
 
-    Create a .env file in the project root directory.
+```bash
+npm install
+npx hardhat run scripts/deploy.js --network sepolia
+npm run start:backend
+npm start
+```
 
-    Add your own environment variables which should look like this:
-    ```
-    
-    API_URL = "https://eth-sepolia.g.alchemy.com/v2/dcxTgaFqasd1w8dsf56WnfKOMy-hghhgVvo"
-    PRIVATE_KEY = "a84ffbb7610822fasd15w51f89sdf3cv2f7d2ecbcf8fd344f0d06c27103346c46"
+Open `http://localhost:3000`.
 
+Backend health endpoint: `http://localhost:3001/health`.
 
-    //Make sure to replace them with the actual values.
-4. Deploy the Smart Contract:
+## Backend API (Node)
 
-    ```shell
-    npx hardhat run scripts/deploy.js --network sepolia
+The backend is a lightweight REST API for read operations against the deployed smart contract.
 
-5. Start the development server:
+1. `GET /health`
+2. `GET /api/cars`
+3. `GET /api/availability?carType=Toyota%20Corolla`
+4. `GET /api/estimate?carType=Toyota%20Corolla&pickUpDate=1767225600&dropOffDate=1767398400&carCount=1`
+5. `GET /api/reservations/0x<wallet_address>`
 
-    ```shell
-    npm run start
+## Environment Variables
 
-The DApp will be accessible at http://localhost:3000.
+Create `.env` in project root:
 
+```env
+API_URL="https://eth-sepolia.g.alchemy.com/v2/<your_key>"
+PRIVATE_KEY="<your_64_hex_chars_private_key>"
+REACT_APP_CAR_RENTAL_CONTRACT_ADDRESS="0x<deployed_contract_address>"
+REACT_APP_BACKEND_URL="http://localhost:3001"
+BACKEND_PORT="3001"
+```
 
-made by me
+Backend persistent storage file:
+
+1. `backend/data/bookings.json`
+
+When a booking is confirmed in the front end, the app now also stores customer and booking details in this backend file via `POST /api/local-bookings`.
+
+Security note:
+
+1. Never commit real private keys.
+2. Use a test-only wallet.
+3. Rotate keys immediately if exposed.
+
+## Code Quality
+
+Run lint checks:
+
+```bash
+npm run lint
+```
+
+Auto-fix where possible:
+
+```bash
+npm run lint:fix
+```
+
+## Evidence for Marking Sheet
+
+1. Back-end implementation (20): `contracts/CarRental.sol`
+2. Blockchain interaction (20): `src/components/BookCar.jsx`, `src/components/BookingHistory.jsx`, `scripts/deploy.js`
+3. Front-end implementation (20): `src/components/*`, `src/styles.css`
+4. Code quality + version control (10): `package.json` lint scripts, Git commit history
+
+## Documentation for Submission
+
+1. Advanced technical report: `TECHNICAL_REPORT.md`
+2. Installation manual: `INSTALLATION_MANUAL.md`
+3. Full source code: this repository
