@@ -111,6 +111,37 @@ Auto-fix where possible:
 npm run lint:fix
 ```
 
+Run contract tests:
+
+```bash
+npm run test:contracts
+```
+
+Run full quality gate:
+
+```bash
+npm run quality
+```
+
+## Code Quality Evidence
+
+1. ESLint is configured across frontend, backend, scripts, tests, and Hardhat config.
+2. Prettier is configured for consistent formatting.
+3. Hardhat contract tests cover `CarRental` lifecycle scenarios.
+4. Production build can be verified with `npm run build`.
+5. Single-command verification is available via `npm run quality`.
+
+## My Contributions
+
+This project was forked from an open-source base. My own implementation work includes:
+
+1. Sepolia deployment configuration and environment validation.
+2. Node backend API and booking persistence implementation.
+3. Wallet/network validation improvements in booking flow.
+4. Booking UI enhancements and refactor for maintainability.
+5. Installation manual and technical report updates.
+6. Code quality tooling and contract testing improvements.
+
 ## Evidence for Marking Sheet
 
 1. Back-end implementation (20): `contracts/CarRental.sol`

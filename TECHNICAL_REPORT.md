@@ -23,9 +23,13 @@ The DApp uses a layered architecture:
 1. **Presentation layer (React)**: User-facing components in `src/components/`.
 2. **Web3 integration layer (Ethers.js + MetaMask)**: Contract reads/writes from front end.
 3. **Smart contract layer (Solidity)**: Booking rules and reservation state in `contracts/CarRental.sol`.
-4. **Deployment/config layer (Hardhat)**: Build and deployment scripts (`scripts/deploy.js`, `hardhat.config.js`).
+4. **Node backend layer**: REST API server and local persistence in `backend/server.js` and `backend/data/bookings.json`.
+5. **Deployment/config layer (Hardhat)**: Build and deployment scripts (`scripts/deploy.js`, `hardhat.config.js`).
 
-The front end runs as a client-only DApp. Instead of a traditional REST API server, user operations are sent as blockchain transactions. Read operations use view functions and provider calls. Write operations require wallet signatures and gas.
+The final architecture is hybrid:
+
+1. Blockchain writes and authoritative reservation state are on-chain through signed wallet transactions.
+2. Backend REST endpoints provide availability/cost/history reads and persist customer profile plus booking metadata for coursework evidence and admin-style retrieval.
 
 ## 3. Back-End Implementation (Smart Contract) [20 marks]
 
@@ -64,7 +68,7 @@ Strengths:
 Limitations:
 
 1. Current model does not store multiple route/location entries on-chain per single booking transaction.
-2. Iterative reservation retrieval from front end can become expensive in large histories.
+2. Iterative reservation retrieval from contract calls can become expensive in large histories without indexing.
 3. Time granularity is day-level approximation in cost calculation logic.
 
 ## 4. Blockchain Interaction [20 marks]
@@ -94,7 +98,7 @@ Limitations:
 
 1. Network/RPC failures can degrade UX without retry strategy.
 2. Sequential on-chain writes in multi-car planning increase latency and gas.
-3. No indexer/subgraph is used, so history retrieval is direct-contract iteration.
+3. No indexer/subgraph is used, so history retrieval still relies on direct-contract iteration.
 
 ## 5. Front-End Implementation [20 marks]
 
@@ -124,22 +128,26 @@ Strengths:
 Limitations:
 
 1. Some legacy DOM-style patterns were historically present and partially modernized.
-2. Personal information fields are currently UI-side only and not persisted on-chain.
+2. Personal information is persisted in the backend datastore, but not on-chain by design for privacy and gas efficiency.
 3. Multi-car plan submits as multiple transactions; one transaction can still fail after previous successes.
 
 ## 6. Code Quality and Version Control [10 marks]
 
 The project demonstrates code quality and version control practices:
 
-1. ESLint scripts defined in `package.json` (`lint`, `lint:fix`).
+1. ESLint scripts defined in `package.json` (`lint`, `lint:fix`) and a combined quality workflow (`quality`).
 2. Modular component structure in `src/components/`.
 3. Environment validation in `hardhat.config.js`.
-4. Git-based iterative commits and checkpointing workflow.
+4. Contract-focused tests in `test/CarRental.test.js` covering booking lifecycle paths.
+5. Git-based iterative commits and checkpointing workflow.
+6. Prettier configuration for consistent formatting across the repository.
 
 Recommended execution for quality verification:
 
 1. `npm run lint`
-2. `npm run build`
+2. `npm run test:contracts`
+3. `npm run build`
+4. `npm run quality`
 
 Version control expectations are met by using a public/private hosted Git repository with commit history demonstrating progressive implementation and debugging.
 
@@ -154,8 +162,8 @@ Strengths:
 Limitations and improvement plan:
 
 1. Add automated CI pipeline for lint + build + tests on push.
-2. Expand automated tests for booking lifecycle and edge cases.
-3. Add formatting standard (Prettier) and pre-commit checks.
+2. Expand tests with additional edge cases and property-based input coverage.
+3. Add pre-commit hooks for quality checks before local commits.
 
 ## 7. Installation and Deployment Summary
 
@@ -164,7 +172,8 @@ The full installation process is documented in `INSTALLATION_MANUAL.md`. The mai
 1. Install dependencies (`npm install`).
 2. Configure `.env` (`API_URL`, `PRIVATE_KEY`, deployed contract address).
 3. Deploy contract to Sepolia (`npx hardhat run scripts/deploy.js --network sepolia`).
-4. Start front end (`npm start`).
+4. Start backend (`npm run start:backend`).
+5. Start front end (`npm start`).
 
 This provides a complete reproducible environment for lecturer/tutor verification.
 
@@ -173,7 +182,7 @@ This provides a complete reproducible environment for lecturer/tutor verificatio
 1. Private key exposure risk exists if `.env` is leaked; test wallet keys only should be used.
 2. Contract upgrade/migration requires front-end address updates.
 3. Refund paths require sufficient contract balance and robust testing.
-4. Client-side-only architecture depends on wallet/browser availability.
+4. Hybrid architecture depends on wallet/browser availability and backend uptime.
 
 Mitigations:
 
@@ -194,3 +203,14 @@ Against the marking sheet:
 
 Overall, the project satisfies the required DApp characteristics and is suitable for technical evaluation and demonstration in coursework assessment.
 
+## 10. Fork Origin and Personal Contribution
+
+This repository was initially forked from an open-source starter/foundation project. The submitted work extends and customizes that base substantially for CN6035 deliverables.
+
+Main personal additions and changes include:
+
+1. Solidity contract implementation and lifecycle logic in `contracts/CarRental.sol`.
+2. Booking flow integration in `src/components/BookCar.jsx` with cost checks and transaction handling.
+3. Wallet-linked booking history in `src/components/BookingHistory.jsx`.
+4. Node backend implementation in `backend/server.js` with persistent storage in `backend/data/bookings.json`.
+5. Coursework documentation updates in `INSTALLATION_MANUAL.md` and this technical report.

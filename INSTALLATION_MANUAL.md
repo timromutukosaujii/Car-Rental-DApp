@@ -18,7 +18,7 @@ Required blockchain setup:
 ## 2. Clone and Install
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/timromutukosaujii/Car-Rental-DApp.git
 cd Car-Rental-DApp
 npm install
 ```
@@ -123,6 +123,18 @@ Auto-fix lint issues:
 
 ```bash
 npm run lint:fix
+```
+
+Run contract tests:
+
+```bash
+npm run test:contracts
+```
+
+Run all quality checks together:
+
+```bash
+npm run quality
 ```
 
 ## 9. Build for Submission
