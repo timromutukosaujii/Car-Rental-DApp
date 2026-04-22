@@ -4,7 +4,7 @@ Car Rental DApp is a decentralized application for managing car reservations on 
 It combines:
 
 1. A Solidity smart contract back end (`contracts/CarRental.sol`)
-2. A Node.js read API backend (`backend/server.js`)
+2. A Node.js + MongoDB backend (`backend/server.js`)
 3. A React front end (`src/`)
 4. Hardhat deployment/testing scripts (`scripts/`, `hardhat.config.js`)
 
@@ -63,15 +63,18 @@ Open `http://localhost:3000`.
 
 Backend health endpoint: `http://localhost:3001/health`.
 
-## Backend API (Node)
+## Backend API (Node + MongoDB)
 
-The backend is a lightweight REST API for read operations against the deployed smart contract.
+The backend exposes REST endpoints for blockchain reads and persists customer booking records in MongoDB.
 
 1. `GET /health`
 2. `GET /api/cars`
 3. `GET /api/availability?carType=Toyota%20Corolla`
 4. `GET /api/estimate?carType=Toyota%20Corolla&pickUpDate=1767225600&dropOffDate=1767398400&carCount=1`
 5. `GET /api/reservations/0x<wallet_address>`
+6. `GET /api/local-bookings`
+7. `GET /api/local-bookings?walletAddress=0x<wallet_address>`
+8. `POST /api/local-bookings`
 
 ## Environment Variables
 
@@ -83,13 +86,18 @@ PRIVATE_KEY="<your_64_hex_chars_private_key>"
 REACT_APP_CAR_RENTAL_CONTRACT_ADDRESS="0x<deployed_contract_address>"
 REACT_APP_BACKEND_URL="http://localhost:3001"
 BACKEND_PORT="3001"
+MONGODB_URI="mongodb://127.0.0.1:27017"
+MONGODB_DB_NAME="car_rental_dapp"
+MONGODB_COLLECTION="bookings"
 ```
 
-Backend persistent storage file:
+MongoDB Atlas setup:
 
-1. `backend/data/bookings.json`
-
-When a booking is confirmed in the front end, the app now also stores customer and booking details in this backend file via `POST /api/local-bookings`.
+1. Create a free/shared cluster in MongoDB Atlas.
+2. Create a database user with read/write access.
+3. In Atlas Network Access, allow your IP (or `0.0.0.0/0` for testing only).
+4. Copy the Atlas connection string and set it as `MONGODB_URI` in `.env`, for example: `mongodb+srv://<username>:<password>@<cluster-url>/?retryWrites=true&w=majority&appName=car-rental-dapp`.
+5. Use database name `car_rental_dapp` and collection `bookings`.
 
 Security note:
 

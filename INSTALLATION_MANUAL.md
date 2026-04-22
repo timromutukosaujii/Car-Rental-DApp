@@ -33,6 +33,9 @@ PRIVATE_KEY="<your_private_key_without_0x_or_with_0x>"
 REACT_APP_CAR_RENTAL_CONTRACT_ADDRESS="0x<contract_address_after_deploy>"
 REACT_APP_BACKEND_URL="http://localhost:3001"
 BACKEND_PORT="3001"
+MONGODB_URI="mongodb+srv://<username>:<password>@<cluster-url>/?retryWrites=true&w=majority&appName=car-rental-dapp"
+MONGODB_DB_NAME="car_rental_dapp"
+MONGODB_COLLECTION="bookings"
 ```
 
 Notes:
@@ -61,6 +64,14 @@ Copy that address into:
 
 ## 5. Start Back End (Node API)
 
+Before starting the backend, configure MongoDB Atlas:
+
+1. Create an Atlas cluster.
+2. Create a database user with read/write access.
+3. Allow your current IP in Atlas Network Access.
+4. Copy Atlas connection string and set `MONGODB_URI` in `.env`.
+5. Confirm the target database name is `car_rental_dapp`.
+
 Start the backend API in one terminal:
 
 ```bash
@@ -84,13 +95,14 @@ Available read endpoints:
 5. `GET /api/local-bookings`
 6. `GET /api/local-bookings?walletAddress=0x<wallet_address>`
 
-Write endpoint (stores personal + booking data in backend storage):
+Write endpoint (stores personal + booking data in MongoDB):
 
 1. `POST /api/local-bookings`
 
-Stored file:
+Stored dataset:
 
-1. `backend/data/bookings.json`
+1. Database: `car_rental_dapp`
+2. Collection: `bookings`
 
 ## 6. Start Front End
 
@@ -150,8 +162,9 @@ npm run build
 3. **Transaction reverted**: check selected car availability and date range.
 4. **Deployment fails**: verify `API_URL` and `PRIVATE_KEY` format in `.env`.
 5. **Contract mismatch**: update `REACT_APP_CAR_RENTAL_CONTRACT_ADDRESS` after redeploy.
-6. **Backend config error**: ensure `.env` contains both `API_URL` and `REACT_APP_CAR_RENTAL_CONTRACT_ADDRESS`.
+6. **Backend config error**: ensure `.env` contains `API_URL`, `REACT_APP_CAR_RENTAL_CONTRACT_ADDRESS`, and `MONGODB_URI`.
 7. **Port already in use**: set `BACKEND_PORT` in `.env` and restart backend.
+8. **MongoDB disconnected**: verify Atlas IP allowlist, DB username/password, and `MONGODB_URI` format.
 
 ## 11. Submission Checklist
 

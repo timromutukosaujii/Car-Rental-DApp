@@ -23,7 +23,7 @@ The DApp uses a layered architecture:
 1. **Presentation layer (React)**: User-facing components in `src/components/`.
 2. **Web3 integration layer (Ethers.js + MetaMask)**: Contract reads/writes from front end.
 3. **Smart contract layer (Solidity)**: Booking rules and reservation state in `contracts/CarRental.sol`.
-4. **Node backend layer**: REST API server and local persistence in `backend/server.js` and `backend/data/bookings.json`.
+4. **Node backend layer**: REST API server with MongoDB Atlas persistence in `backend/server.js`.
 5. **Deployment/config layer (Hardhat)**: Build and deployment scripts (`scripts/deploy.js`, `hardhat.config.js`).
 
 The final architecture is hybrid:
@@ -212,5 +212,5 @@ Main personal additions and changes include:
 1. Solidity contract implementation and lifecycle logic in `contracts/CarRental.sol`.
 2. Booking flow integration in `src/components/BookCar.jsx` with cost checks and transaction handling.
 3. Wallet-linked booking history in `src/components/BookingHistory.jsx`.
-4. Node backend implementation in `backend/server.js` with persistent storage in `backend/data/bookings.json`.
+4. Node backend implementation in `backend/server.js` with persistent MongoDB storage.
 5. Coursework documentation updates in `INSTALLATION_MANUAL.md` and this technical report.
