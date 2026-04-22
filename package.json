@@ -21,14 +21,19 @@
     "start:backend": "node backend/server.js",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:contracts": "npx hardhat test",
     "eject": "react-scripts eject",
-    "lint": "eslint \"src/**/*.{js,jsx}\" \"scripts/**/*.js\" \"test/**/*.js\" \"hardhat.config.js\"",
-    "lint:fix": "eslint \"src/**/*.{js,jsx}\" \"scripts/**/*.js\" \"test/**/*.js\" \"hardhat.config.js\" --fix"
+    "lint": "eslint \"src/**/*.{js,jsx}\" \"backend/**/*.js\" \"scripts/**/*.js\" \"test/**/*.js\" \"hardhat.config.js\"",
+    "lint:fix": "eslint \"src/**/*.{js,jsx}\" \"backend/**/*.js\" \"scripts/**/*.js\" \"test/**/*.js\" \"hardhat.config.js\" --fix",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "quality": "npm run lint && npm run test:contracts && npm run build"
   },
   "eslintConfig": {
     "extends": [
       "react-app",
-      "react-app/jest"
+      "react-app/jest",
+      "prettier"
     ]
   },
   "browserslist": {
@@ -48,8 +53,10 @@
     "@nomiclabs/hardhat-waffle": "^2.0.6",
     "chai": "^4.3.8",
     "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.1.8",
     "ethereum-waffle": "^4.0.10",
     "ethers": "^5.7.2",
-    "hardhat": "^2.17.2"
+    "hardhat": "^2.17.2",
+    "prettier": "^3.6.2"
   }
 }
