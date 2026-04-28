@@ -24,6 +24,7 @@ const INITIAL_FORM_STATE = {
   pickTime: "",
   dropTime: "",
   carCount: "1",
+  hasValidLicense: false,
 };
 
 const INITIAL_PROFILE_STATE = {
@@ -35,6 +36,14 @@ const INITIAL_PROFILE_STATE = {
   address: "",
   city: "",
   postcode: "",
+};
+
+const toNoonUtcSeconds = (dateInput) => {
+  const dateValue = String(dateInput || "").trim();
+  if (!dateValue) return NaN;
+
+  const safeDate = new Date(`${dateValue}T12:00:00Z`);
+  return Math.floor(safeDate.getTime() / 1000);
 };
 
 function BookCar() {
@@ -170,6 +179,11 @@ function BookCar() {
       return;
     }
 
+    if (!formData.hasValidLicense) {
+      setFormErrorMessage("Please confirm you have a valid driving license.");
+      return;
+    }
+
     if (Number.isNaN(parsedCarCount) || parsedCarCount <= 0) {
       setFormErrorMessage("Car count must be at least 1");
       return;
@@ -197,8 +211,8 @@ function BookCar() {
     if (parsedCarCount > 1) {
       try {
         const availabilityMap = await getAvailabilityMap();
-        const pickUpDateInSeconds = Math.floor(pickDate.getTime() / 1000);
-        const dropOffDateInSeconds = Math.floor(dropDate.getTime() / 1000);
+        const pickUpDateInSeconds = toNoonUtcSeconds(formData.pickTime);
+        const dropOffDateInSeconds = toNoonUtcSeconds(formData.dropTime);
 
         if (availabilityMap) {
           const selectedAvailable = availabilityMap[formData.carType] || 0;
@@ -290,11 +304,21 @@ function BookCar() {
       const carRentalContract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
       const walletAddress = await signer.getAddress();
 
-      const pickUpDateInSeconds = Math.floor(new Date(formData.pickTime).getTime() / 1000);
-      const dropOffDateInSeconds = Math.floor(new Date(formData.dropTime).getTime() / 1000);
+      const pickUpDateInSeconds = toNoonUtcSeconds(formData.pickTime);
+      const dropOffDateInSeconds = toNoonUtcSeconds(formData.dropTime);
+      const nowInSeconds = Math.floor(Date.now() / 1000);
       const parsedCarCount = Number(formData.carCount);
       if (Number.isNaN(parsedCarCount) || parsedCarCount <= 0) {
         throw new Error("Car count must be at least 1");
+      }
+      if (Number.isNaN(pickUpDateInSeconds) || Number.isNaN(dropOffDateInSeconds)) {
+        throw new Error("Invalid booking dates.");
+      }
+      if (pickUpDateInSeconds < nowInSeconds) {
+        throw new Error("Pick-up date must be today/future. Try a later date.");
+      }
+      if (dropOffDateInSeconds <= pickUpDateInSeconds) {
+        throw new Error("Drop-off date must be after pick-up date.");
       }
 
       const finalPlan = bookingPlan.length
@@ -323,6 +347,16 @@ function BookCar() {
         }
         if (!item.pickUp || !item.dropOff) {
           throw new Error("Each booking plan row needs pick-up and drop-off location.");
+        }
+
+        const [totalUnitsBn, rentedUnitsBn] = await carRentalContract.getCarAvailability(
+          item.carType
+        );
+        const availableUnits = totalUnitsBn.toNumber() - rentedUnitsBn.toNumber();
+        if (availableUnits < itemCount) {
+          throw new Error(
+            `Only ${Math.max(availableUnits, 0)} ${item.carType} car(s) currently available.`
+          );
         }
 
         const [, , totalWei] = await carRentalContract.getBookingCost(

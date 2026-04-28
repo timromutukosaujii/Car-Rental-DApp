@@ -126,6 +126,18 @@ function BookingForm({
           />
         </div>
 
+        <div className="box-form__car-time">
+          <label htmlFor="license-confirmation">
+            <input
+              id="license-confirmation"
+              checked={Boolean(formData.hasValidLicense)}
+              onChange={(event) => onFieldChange("hasValidLicense", event.target.checked)}
+              type="checkbox"
+            />{" "}
+            I confirm I hold a valid driving license for this vehicle type <b>*</b>
+          </label>
+        </div>
+
         <button onClick={onSearch} type="submit">
           Search
         </button>
